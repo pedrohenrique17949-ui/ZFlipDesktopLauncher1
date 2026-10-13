@@ -1,1 +1,46 @@
 
+name: Build Z Flip Desktop Launcher
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ZFlipDesktopLauncher.zip"
+      - ".github/workflows/android.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar arquivos
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Extrair projeto
+        run: |
+          unzip -q ZFlipDesktopLauncher.zip -d extracted
+          find extracted -name settings.gradle.kts -print
+
+      - name: Compilar APK
+        run: |
+          PROJECT_DIR="$(dirname "$(find extracted -name settings.gradle.kts -print -quit)")"
+          test -n "$PROJECT_DIR"
+          gradle -p "$PROJECT_DIR" assembleDebug
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZFlipDesktopLauncher-APK
+          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
